@@ -5,11 +5,18 @@
 import yfinance as yf
 
 def main():
-    gold_price, day_difference = get_gold_price()
-    gs_price, gs_day_difference = get_GoldmanSachs_price()
+    gold_price, gold_change = get_gold_price()
+    gs_price, gs_change = get_GoldmanSachs_price()
+    pm_price, pm_change = get_Pimco_price()
+    sc_price, sc_change = get_Schroder_price()
 
-    print(f"Goldman Sachs Liquid Reserves Fund is: ${gs_price:.2f} changing at {gs_day_difference:.2f}%")
-    print(f"Gold Price is: ${gold_price:.2f} changing at {day_difference:.2f}%")
+    print(f"Gold Price is: ${gold_price:.2f} changing at {gold_change:.2f}%")
+    print("----" * 16)
+    print(f"Goldman Sachs Liquid Reserves Fund is: ${gs_price:.2f} changing at {gs_change:.2f}%")
+    print("----" * 16)
+    print(f"PIMCO GIS Income Fund is: ${pm_price:.2f} changing at {pm_change:.2f}%")
+    print("----" * 16)
+    print(f"Schroder International Selection Fund is: ${sc_price:.2f} changing at {sc_change:.2f}%")
 
 def get_gold_price():
     # Create a Ticker object for gold (symbol: "GC=F")
@@ -26,15 +33,53 @@ def get_gold_price():
     return latest_gold_price, output
 
 def get_GoldmanSachs_price():
-    gs_ticker = yf.Ticker("0P00000TMT")
+    # Goldman Sachs US$ Liquid Reserves Fund
+    # https://finance.yahoo.com/quote/0P00000TMT?p=0P00000TMT
+    # ISIN: IE0031294410
+    # pcs, price = (4.6080, 11945.2387
+    # )
+    ticker = yf.Ticker("0P00000TMT")
 
-    historical_data = gs_ticker.history(period="3d")
+    historical_data = ticker.history(period="3d")
 
-    pre_latest_gs_price = historical_data["Close"].iloc[-2]
-    latest_gs_price = historical_data["Close"].iloc[-1]
-    output = (latest_gs_price - pre_latest_gs_price) / pre_latest_gs_price * 100
+    pre_latest_price = historical_data["Close"].iloc[-2]
+    latest_price = historical_data["Close"].iloc[-1]
+    output = (latest_price - pre_latest_price) / pre_latest_price * 100
 
-    return latest_gs_price, output
+    return latest_price, output
+
+def get_Pimco_price():
+    # PIMCO GIS plc - Income Fund (0P0000X83M)
+    # https://finance.yahoo.com/quote/0P0000X83M?p=0P0000X83M&.tsrc=fin-srch
+    # ISIN: 
+    # pcs, price = (1,015.69700, $10.83)
+
+    ticker = yf.Ticker("0P0000X83M")
+
+    historical_data = ticker.history(period="3d")
+
+    pre_latest_price = historical_data["Close"].iloc[-2]
+    latest_price = historical_data["Close"].iloc[-1]
+    output = (latest_price - pre_latest_price) / pre_latest_price * 100
+
+    return latest_price, output
+
+def get_Schroder_price():
+    # Schroder International Selection Fund Global Credit
+    # https://finance.yahoo.com/quote/0P00019BR5?p=0P00019BR5
+    # ISIN: 
+    # pcs, price = (100.58000, $102.426)
+
+    ticker = yf.Ticker("0P00019BR5")
+
+    historical_data = ticker.history(period="3d")
+
+    pre_latest_price = historical_data["Close"].iloc[-2]
+    latest_price = historical_data["Close"].iloc[-1]
+    output = (latest_price - pre_latest_price) / pre_latest_price * 100
+
+    return latest_price, output
+
 
 if __name__ == "__main__":
     main()
