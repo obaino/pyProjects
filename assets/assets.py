@@ -10,12 +10,14 @@ def main():
     gs_price, gs_change = get_GoldmanSachs_price()
     pm_price, pm_change = get_Pimco_price()
     sc_price, sc_change = get_Schroder_price()
+    lgt_price = get_LGT_price()
 
     d = {
         "Gold": (gold_price, gold_change),
         "Goldman Sachs Liquid Reserves Fund": (gs_price, gs_change),
         "PIMCO GIS Income Fund": (pm_price, pm_change),
         "Schroder International Selection Fund": (sc_price, sc_change),
+        "LGT GIM Balanced": (lgt_price, None)
         }
     
     headers = ["Asset", "Price", "Change"]
@@ -46,7 +48,7 @@ def get_gold_price():
 
 def get_GoldmanSachs_price():
     # Goldman Sachs US$ Liquid Reserves Fund
-    # https://finance.yahoo.com/quote/0P00000TMT?p=0P00000TMT
+    # https://finance.yahoo.com/quote/0P00000TMT
     # ISIN: IE0031294410
     # pcs, price = (4.6080, 11945.2387
     # )
@@ -62,7 +64,7 @@ def get_GoldmanSachs_price():
 
 def get_Pimco_price():
     # PIMCO GIS plc - Income Fund (0P0000X83M)
-    # https://finance.yahoo.com/quote/0P0000X83M?p=0P0000X83M&.tsrc=fin-srch
+    # https://finance.yahoo.com/quote/0P0000X83M
     # ISIN: 
     # pcs, price = (1,015.69700, $10.83)
 
@@ -78,7 +80,7 @@ def get_Pimco_price():
 
 def get_Schroder_price():
     # Schroder International Selection Fund Global Credit
-    # https://finance.yahoo.com/quote/0P00019BR5?p=0P00019BR5
+    # https://finance.yahoo.com/quote/0P00019BR5
     # ISIN: 
     # pcs, price = (100.58000, $102.426)
 
@@ -92,6 +94,21 @@ def get_Schroder_price():
 
     return latest_price, output
 
+def get_LGT_price():
+    # LGT Multi-Assets SICAV - LGT GIM Balanced
+    # https://finance.yahoo.com/quote/0P0000ND55
+    # ISIN: LI0108468880
+    # pcs, price = (76, 12647.7436)
+
+    ticker = yf.Ticker("0P0000ND55")
+
+    historical_data = ticker.history(period="3d")
+
+    # pre_latest_price = historical_data["Close"].iloc[-2]
+    latest_price = historical_data["Close"].iloc[-1]
+    # output = (latest_price - pre_latest_price) / pre_latest_price * 100
+
+    return latest_price
 
 if __name__ == "__main__":
     main()
