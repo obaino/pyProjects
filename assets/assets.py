@@ -3,6 +3,7 @@
 
 # https://pypi.org/project/yfinance/
 import yfinance as yf
+from tabulate import tabulate
 
 def main():
     gold_price, gold_change = get_gold_price()
@@ -10,13 +11,24 @@ def main():
     pm_price, pm_change = get_Pimco_price()
     sc_price, sc_change = get_Schroder_price()
 
-    print(f"Gold Price is: ${gold_price:.2f} changing at {gold_change:.2f}%")
-    print("----" * 16)
-    print(f"Goldman Sachs Liquid Reserves Fund is: ${gs_price:.2f} changing at {gs_change:.2f}%")
-    print("----" * 16)
-    print(f"PIMCO GIS Income Fund is: ${pm_price:.2f} changing at {pm_change:.2f}%")
-    print("----" * 16)
-    print(f"Schroder International Selection Fund is: ${sc_price:.2f} changing at {sc_change:.2f}%")
+    d = {
+        "Gold": (gold_price, gold_change),
+        "Goldman Sachs Liquid Reserves Fund": (gs_price, gs_change),
+        "PIMCO GIS Income Fund": (pm_price, pm_change),
+        "Schroder International Selection Fund": (sc_price, sc_change),
+        }
+    
+    headers = ["Asset", "Price", "Change"]
+
+    print(tabulate([(k,) + v for k, v in d.items()], headers=headers, tablefmt="grid"))
+
+    # print(f"Gold Price is: ${gold_price:.2f} changing at {gold_change:.2f}%")
+    # print("----" * 16)
+    # print(f"Goldman Sachs Liquid Reserves Fund is: ${gs_price:.2f} changing at {gs_change:.2f}%")
+    # print("----" * 16)
+    # print(f"PIMCO GIS Income Fund is: ${pm_price:.2f} changing at {pm_change:.2f}%")
+    # print("----" * 16)
+    # print(f"Schroder International Selection Fund is: ${sc_price:.2f} changing at {sc_change:.2f}%")
 
 def get_gold_price():
     # Create a Ticker object for gold (symbol: "GC=F")
