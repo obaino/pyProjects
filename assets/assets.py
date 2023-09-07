@@ -102,7 +102,7 @@ def get_LGT_price():
 
     ticker = yf.Ticker("0P0000ND55")
 
-    historical_data = ticker.history(period="3d")
+    historical_data = ticker.history(period="1mo")
 
     # pre_latest_price = historical_data["Close"].iloc[-2]
     latest_price = historical_data["Close"].iloc[-1]
