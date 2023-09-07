@@ -5,6 +5,7 @@
 import yfinance as yf
 from tabulate import tabulate
 
+
 def main():
     gold_price, gold_change = get_gold_price()
     gs_price, gs_change = get_GoldmanSachs_price()
@@ -17,9 +18,9 @@ def main():
         "Goldman Sachs Liquid Reserves Fund": (gs_price, gs_change),
         "PIMCO GIS Income Fund": (pm_price, pm_change),
         "Schroder International Selection Fund": (sc_price, sc_change),
-        "LGT GIM Balanced": (lgt_price, None)
-        }
-    
+        "LGT GIM Balanced": (lgt_price, None),
+    }
+
     headers = ["Asset", "Price", "Change"]
 
     print(tabulate([(k,) + v for k, v in d.items()], headers=headers, tablefmt="grid"))
@@ -31,6 +32,7 @@ def main():
     # print(f"PIMCO GIS Income Fund is: ${pm_price:.2f} changing at {pm_change:.2f}%")
     # print("----" * 16)
     # print(f"Schroder International Selection Fund is: ${sc_price:.2f} changing at {sc_change:.2f}%")
+
 
 def get_gold_price():
     # Create a Ticker object for gold (symbol: "GC=F")
@@ -45,6 +47,7 @@ def get_gold_price():
     output = (latest_gold_price - pre_latest_gold_price) / pre_latest_gold_price * 100
 
     return latest_gold_price, output
+
 
 def get_GoldmanSachs_price():
     # Goldman Sachs US$ Liquid Reserves Fund
@@ -62,10 +65,11 @@ def get_GoldmanSachs_price():
 
     return latest_price, output
 
+
 def get_Pimco_price():
     # PIMCO GIS plc - Income Fund (0P0000X83M)
     # https://finance.yahoo.com/quote/0P0000X83M
-    # ISIN: 
+    # ISIN:
     # pcs, price = (1,015.69700, $10.83)
 
     ticker = yf.Ticker("0P0000X83M")
@@ -78,10 +82,11 @@ def get_Pimco_price():
 
     return latest_price, output
 
+
 def get_Schroder_price():
     # Schroder International Selection Fund Global Credit
     # https://finance.yahoo.com/quote/0P00019BR5
-    # ISIN: 
+    # ISIN:
     # pcs, price = (100.58000, $102.426)
 
     ticker = yf.Ticker("0P00019BR5")
@@ -93,6 +98,7 @@ def get_Schroder_price():
     output = (latest_price - pre_latest_price) / pre_latest_price * 100
 
     return latest_price, output
+
 
 def get_LGT_price():
     # LGT Multi-Assets SICAV - LGT GIM Balanced
@@ -109,6 +115,7 @@ def get_LGT_price():
     # output = (latest_price - pre_latest_price) / pre_latest_price * 100
 
     return latest_price
+
 
 if __name__ == "__main__":
     main()
