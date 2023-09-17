@@ -11,7 +11,7 @@ def main():
     for n in range(number):
         if is_prime(n):
             prime_list.append(n)
-    # print(prime_list)
+    print(prime_list, file=open('output.txt', 'w'))
     print(f"There are {len(prime_list)} prime numbers up to {number}. Using the new function")
     t.stop()
 
@@ -23,7 +23,6 @@ def main():
     # print(prime_list)
     print(f"There are {len(prime_list)} prime numbers up to {number}. Using the old function")
     t.stop()
-
 
 
 def is_prime_old(number):
