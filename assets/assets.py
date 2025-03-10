@@ -8,14 +8,16 @@ from tabulate import tabulate
 
 def main():
     gold_price, gold_change = get_gold_price()
-    gs_price, gs_change = get_GoldmanSachs_price()
+    vwra_price, vwra_change = get_VWRA_price()
+    vwce_price, vwce_change = get_VWCE_price()
     pm_price, pm_change = get_Pimco_price()
     sc_price, sc_change = get_Schroder_price()
     lgt_price = get_LGT_price()
 
     d = {
         "Gold": (gold_price, gold_change),
-        "Goldman Sachs Liquid Reserves Fund": (gs_price, gs_change),
+        "VWRA": (vwra_price, vwra_change),
+        "VWCE": (vwce_price, vwce_change),
         "PIMCO GIS Income Fund": (pm_price, pm_change),
         "Schroder International Selection Fund": (sc_price, sc_change),
         "LGT GIM Balanced": (lgt_price, None),
@@ -36,6 +38,7 @@ def main():
 
 def get_gold_price():
     # Create a Ticker object for gold (symbol: "GC=F")
+    # "GC=F" is the ticker symbol for Gold Futures on Yahoo Finance
     gold_ticker = yf.Ticker("GC=F")
 
     # Fetch historical data (2 day) to get the latest price
@@ -49,13 +52,27 @@ def get_gold_price():
     return latest_gold_price, output
 
 
-def get_GoldmanSachs_price():
-    # Goldman Sachs US$ Liquid Reserves Fund
-    # https://finance.yahoo.com/quote/0P00000TMT
-    # ISIN: IE0031294410
+def get_VWRA_price():
+    # Vanguard FTSE All-World UCITS ETF (VWRA.L)
+    # https://finance.yahoo.com/quote/VWRA.L/
     # pcs, price = (4.6080, 11945.2387
     # )
-    ticker = yf.Ticker("0P00000TMT")
+    ticker = yf.Ticker("VWRA.L")
+
+    historical_data = ticker.history(period="3d")
+
+    pre_latest_price = historical_data["Close"].iloc[-2]
+    latest_price = historical_data["Close"].iloc[-1]
+    output = (latest_price - pre_latest_price) / pre_latest_price * 100
+
+    return latest_price, output
+
+def get_VWCE_price():
+    # Vanguard FTSE All-World UCITS ETF (VWCE.DE)
+    # https://finance.yahoo.com/quote/VWCE.DE/
+    # pcs, price = (4.6080, 11945.2387
+    # )
+    ticker = yf.Ticker("VWCE.DE")
 
     historical_data = ticker.history(period="3d")
 
