@@ -1,3 +1,4 @@
+# https://chatgpt.com/share/68132b11-28d8-800c-a5e2-465f3141a89e
 
 import math
 
