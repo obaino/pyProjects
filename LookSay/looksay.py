@@ -6,8 +6,10 @@
 # 21 -> one 2, one 1 -> "1211"
 
 def look_and_say(sequence, n_terms):
-    for _ in range(n_terms):
-        print(sequence)
+    # for _ in range(n_terms):
+    for index in range(1, n_terms + 1):
+        # print(sequence)
+        print(f"{index}: {sequence}")
         next_seq = ""
         i = 0
         while i < len(sequence):
