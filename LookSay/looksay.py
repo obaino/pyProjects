@@ -8,8 +8,7 @@
 def look_and_say(sequence, n_terms):
     # for _ in range(n_terms):
     for index in range(1, n_terms + 1):
-        # print(sequence)
-        # print(f"{index} len {len(sequence)}: {sequence}")
+        # print(f"{index}: len {len(sequence)}: {sequence}")
         print(f"{index}: len {len(sequence)}")
         next_seq = ""
         i = 0
