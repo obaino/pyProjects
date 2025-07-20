@@ -1,3 +1,5 @@
+from codetiming import Timer
+
 def look_and_say(n):
     """Generate the first n terms of the Look-and-Say sequence."""
     if n <= 0:
@@ -22,5 +24,11 @@ def look_and_say(n):
     return sequence
 
 # Example: Generate the first 10 terms
-for i, term in enumerate(look_and_say(10), start=1):
-    print(f"{i}: {term}")
+terms = int(input("How many terms do you want to generate? "))
+t = Timer()
+t.start()
+print(f"Generating {terms} terms of the look-and-say sequence:")
+for i, term in enumerate(look_and_say(terms), start=1):
+    # print(f"{i}: len {len(term)} - {term}")
+    print(f"{i}: len {len(term)}")
+t.stop()

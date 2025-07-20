@@ -5,7 +5,10 @@
 # 11 -> two 1s -> "21"
 # 21 -> one 2, one 1 -> "1211"
 
+from codetiming import Timer
+
 def look_and_say(sequence, n_terms):
+    
     # for _ in range(n_terms):
     for index in range(1, n_terms + 1):
         # print(f"{index}: len {len(sequence)}: {sequence}")
@@ -24,5 +27,8 @@ def look_and_say(sequence, n_terms):
 # Ask user:
 seq = input("Enter starting sequence (default is '1'): ") or "1"
 terms = int(input("How many terms do you want to generate? "))
+t = Timer()
+t.start()
+print(f"Generating {terms} terms of the look-and-say sequence starting with '{seq}':")
 look_and_say(seq, terms)
-
+t.stop()
