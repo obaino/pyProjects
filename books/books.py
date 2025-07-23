@@ -1,4 +1,5 @@
 # based on cs50p problem set 6, pizza.
+# it outputs a table of books from a CSV file.
 # https://cs50.harvard.edu/python/2022/psets/6/pizza/
 
 from sys import argv, exit
