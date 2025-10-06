@@ -1,37 +1,31 @@
 import os
-from flask import Flask, render_template_string, request
+from pathlib import Path
+from flask import Flask, render_template_string, request, redirect, url_for
 import subprocess
 
 app = Flask(__name__)
 
-FILES_DIR = "/media/nikolask/2T_BackUp/Archived/Phd_Docs/"  # Change this to your directory
+FILES_DIR = "/media/nikolask/2T_BackUp/Archived/Phd_Docs/"  # Change to your directory
 
-@app.route("/", methods=["GET"])
+@app.route("/")
 def index():
-    query = request.args.get("q", "").lower()
     files = []
     for root, dirs, filenames in os.walk(FILES_DIR):
         for fname in filenames:
-            if query and query not in fname.lower():
-                continue
             fullpath = os.path.join(root, fname)
             mtime = os.path.getmtime(fullpath)
             files.append((mtime, fullpath))
     files.sort(reverse=True)
     html = '''
-    <html><body>
-        <form method="get">
-            <input type="text" name="q" value="{{query}}" placeholder="Search filenames..."/>
-            <input type="submit" value="Search"/>
-        </form>
-        <h1>Files</h1><ul>
+        <html><body><h1>Files</h1><ul>
         {% for _, f in files %}
-            <li><a href="{{ url_for('open_file', fpath=f) }}">{{ f }}</a></li>
+          <li>
+            <a href="{{ url_for('open_file', fpath=f) }}">{{ f }}</a>
+          </li>
         {% endfor %}
-        </ul>
-    </body></html>
+        </ul></body></html>
     '''
-    return render_template_string(html, files=files, query=query)
+    return render_template_string(html, files=files)
 
 @app.route("/open")
 def open_file():
