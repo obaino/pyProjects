@@ -3,108 +3,175 @@ import os
 from datetime import datetime
 
 # --- CONFIGURATION ---
-CATEGORIES = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκι", "Πουλόβερ", "Γιλέκο", "Μπουφάν"]
 VAT_RATE = 0.24
-# Your specific Mac directory
 SAVE_DIR = "/Users/nikolask/Documents/Deal_Emporio/ΠΩΛΗΣΕΙΣ"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CAT_FILE = os.path.join(SCRIPT_DIR, "categories.txt")
 
-# Create the directory if it doesn't exist
+# Ensure directories exist
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
+
+def load_categories():
+    """Loads categories from a text file. Creates default if missing."""
+    default_cats = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκι", "Πουλόβερ", "Γιλέκο"]
+    if not os.path.exists(CAT_FILE):
+        with open(CAT_FILE, "w", encoding="utf-8") as f:
+            for cat in default_cats:
+                f.write(cat + "\n")
+        return default_cats
+    
+    with open(CAT_FILE, "r", encoding="utf-8") as f:
+        # Read lines, strip whitespace, and ignore empty lines
+        return [line.strip() for line in f if line.strip()]
+
+def clear_screen():
+    os.system('clear')
 
 def get_choice(options, prompt):
     print(f"\n{prompt}:")
     for i, option in enumerate(options, 1):
         print(f"[{i}] {option}")
-    
     while True:
         try:
             choice = int(input("Επιλογή αριθμού: "))
             if 1 <= choice <= len(options):
                 return options[choice - 1]
-            print(f"Παρακαλώ επιλέξτε από 1 έως {len(options)}.")
+            print(f"Επιλέξτε από 1 έως {len(options)}.")
         except ValueError:
-            print("Λάθος είσοδος. Δώστε έναν αριθμό.")
+            print("Λάθος είσοδος.")
 
-def record_sale():
+def view_daily_report(full_path):
+    if not os.path.exists(full_path):
+        print("\n>> Δεν υπάρχουν πωλήσεις για σήμερα ακόμα.")
+        return
+    
+    df = pd.read_csv(full_path)
+    summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+    df_sales = df[~df['Time'].isin(summary_markers)].copy()
+    df_sales['Price'] = pd.to_numeric(df_sales['Price'], errors='coerce')
+
+    print("\n" + "-"*65)
+    print(f"ΑΝΑΛΥΤΙΚΗ ΚΑΤΑΣΤΑΣΗ ΠΩΛΗΣΕΩΝ - {datetime.now().strftime('%d/%m/%Y')}")
+    print("-" * 65)
+    
+    if len(df_sales) > 0:
+        print(df_sales[['Time', 'Category', 'Payment', 'α/β', 'Price']].to_string(index=False))
+        
+        card_sum = df_sales[df_sales['Payment'] == 'Card']['Price'].sum()
+        cash_sum = df_sales[df_sales['Payment'] == 'Cash']['Price'].sum()
+        total_gross = card_sum + cash_sum
+        
+        print("-" * 65)
+        print(f"Κάρτα: {card_sum:.2f}€ | Μετρητά: {cash_sum:.2f}€ | Σύνολο: {total_gross:.2f}€")
+    else:
+        print("Δεν βρέθηκαν πωλήσεις.")
+    print("-" * 65)
+
+def update_and_save(df_sales, full_path):
+    summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+    df_sales = df_sales[~df_sales['Time'].isin(summary_markers)].copy()
+    
+    df_sales['VAT_Calculated'] = df_sales.apply(
+        lambda x: x['Price'] - (x['Price'] / (1 + VAT_RATE)) 
+        if (x['Payment'] == "Card" or x['α/β'] == "α") else 0, axis=1
+    )
+    
+    total_gross = df_sales['Price'].sum()
+    total_vat = df_sales['VAT_Calculated'].sum()
+    card_sum = df_sales[df_sales['Payment'] == 'Card']['Price'].sum()
+    cash_sum = df_sales[df_sales['Payment'] == 'Cash']['Price'].sum()
+
+    summary_rows = [
+        {"Time": "---SUMMARY---", "Category": "", "Payment": "", "α/β": "", "Price": None},
+        {"Time": "TOTAL CARD", "Category": "", "Payment": "", "α/β": "", "Price": card_sum},
+        {"Time": "TOTAL CASH", "Category": "", "Payment": "", "α/β": "", "Price": cash_sum},
+        {"Time": "GROSS TOTAL", "Category": "", "Payment": "", "α/β": "", "Price": total_gross},
+        {"Time": "VAT TO PAY (24%)", "Category": "", "Payment": "", "α/β": "", "Price": total_vat}
+    ]
+    df_summary = pd.DataFrame(summary_rows)
+    df_to_save = pd.concat([df_sales, df_summary], ignore_index=True)
+    df_to_save.to_csv(full_path, index=False)
+
+def main_menu():
     now = datetime.now()
     date_str = now.strftime("%y%m%d")
-    timestamp = now.strftime("%H:%M:%S")
+    full_path = os.path.join(SAVE_DIR, f"{date_str}_sales.csv")
     
-    filename = f"{date_str}_sales.csv"
-    full_path = os.path.join(SAVE_DIR, filename)
+    # Reload categories every time the menu opens so changes are instant
+    categories = load_categories()
     
-    print("\n" + "="*25)
-    print(" ΚΑΤΑΓΡΑΦΗ ΠΩΛΗΣΗΣ")
-    print("="*25)
+    clear_screen()
+    print("="*35)
+    print(f"   DEAL EMPORIO - POS SYSTEM")
+    print(f"   Ημερομηνία: {now.strftime('%d/%m/%Y')}")
+    print("="*35)
+    print("[1] Νέα Πώληση")
+    print("[2] Προβολή Σημερινών Πωλήσεων")
+    print("[3] Διαγραφή τελευταίας εγγραφής")
+    print("[4] Έξοδος")
+    
+    cmd = input("\nΕπιλογή: ")
+    
+    if cmd == '1':
+        category = get_choice(categories, "Κατηγορία")
+        payment = get_choice(["Card", "Cash"], "Τρόπος Πληρωμής")
+        
+        if payment == "Card":
+            receipt_status = "α"
+        else:
+            while True:
+                r_in = input("\nα ή β; ").strip().lower()
+                if r_in in ['α', 'a']: receipt_status = "α"; break
+                elif r_in in ['β', 'b']: receipt_status = "β"; break
+                else: print("Πατήστε α ή β.")
+        
+        try:
+            price = float(input("Συνολική Αξία (με ΦΠΑ): "))
+        except ValueError:
+            print(">> Σφάλμα: Μη έγκυρη τιμή.")
+            input("\nΠιέστε Enter...")
+            return True
 
-    # 1. Category and Payment Choice
-    category = get_choice(CATEGORIES, "Κατηγορία")
-    payment = get_choice(["Card", "Cash"], "Τρόπος Πληρωμής")
-    
-    # 2. Receipt Logic (α/β)
-    if payment == "Card":
-        receipt = "Yes"
-    else:
-        while True:
-            # .strip().lower() handles spaces and case sensitivity
-            receipt_input = input("α / β; ").strip().lower()
-            if receipt_input in ['α', 'a']: # Handles both Greek and English 'a'
-                receipt = "Yes"
-                break
-            elif receipt_input in ['β', 'b']: # Handles both Greek and English 'b'
-                receipt = "No"
-                break
+        new_data = pd.DataFrame({
+            "Time": [datetime.now().strftime("%H:%M:%S")],
+            "Category": [category], 
+            "Payment": [payment], 
+            "α/β": [receipt_status], 
+            "Price": [price]
+        })
+
+        if os.path.exists(full_path):
+            df_existing = pd.read_csv(full_path)
+            summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+            df_sales = df_existing[~df_existing['Time'].isin(summary_markers)]
+            df_final = pd.concat([df_sales, new_data], ignore_index=True)
+        else:
+            df_final = new_data
+
+        update_and_save(df_final, full_path)
+        input("\nΠιέστε Enter...")
+        
+    elif cmd == '2':
+        view_daily_report(full_path)
+        input("\nΠιέστε Enter για επιστροφή...")
+    elif cmd == '3':
+        if os.path.exists(full_path):
+            df = pd.read_csv(full_path)
+            summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+            df_sales = df[~df['Time'].isin(summary_markers)]
+            if len(df_sales) > 0:
+                update_and_save(df_sales[:-1], full_path)
+                print("\n>> Διαγράφηκε.")
             else:
-                print("Παρακαλώ πατήστε 'α' για Ναι ή 'β' για Όχι.")
-    
-    try:
-        price = float(input("Συνολική Αξία (με ΦΠΑ): "))
-    except ValueError:
-        print(">> Σφάλμα: Μη έγκυρη τιμή.")
-        return
-
-    # 3. Save Data
-    new_sale = {
-        "Time": [timestamp],
-        "Category": [category],
-        "Payment": [payment],
-        "Receipt": [receipt],
-        "Price": [price]
-    }
-    df_new = pd.DataFrame(new_sale)
-
-    if not os.path.isfile(full_path):
-        df_new.to_csv(full_path, index=False)
-    else:
-        df_new.to_csv(full_path, mode='a', header=False, index=False)
-
-    # 4. Financial Summary Calculation
-    df_day = pd.read_csv(full_path)
-    
-    # VAT Calculation logic
-    df_day['VAT_Amount'] = df_day.apply(
-        lambda x: x['Price'] - (x['Price'] / (1 + VAT_RATE)) if x['Receipt'] == "Yes" else 0, 
-        axis=1
-    )
-
-    total_gross = df_day['Price'].sum()
-    total_vat = df_day['VAT_Amount'].sum()
-    card_total = df_day[df_day['Payment']=='Card']['Price'].sum()
-    cash_total = df_day[df_day['Payment']=='Cash']['Price'].sum()
-    
-    # 5. Display Report
-    print("\n" + "-"*45)
-    print(f"ΣΥΝΟΨΗ ΗΜΕΡΑΣ ({date_str})")
-    print(f"Σύνολο Κάρτας:    {card_total:10.2f}€")
-    print(f"Σύνολο Μετρητών:  {cash_total:10.2f}€")
-    print(f"Μικτό Σύνολο:     {total_gross:10.2f}€")
-    print("-" * 25)
-    print(f"ΦΠΑ ΠΡΟΣ ΑΠΟΔΟΣΗ (24%): {total_vat:8.2f}€")
-    print("-" * 45)
+                print("\n>> Κενό αρχείο.")
+        input("\nΠιέστε Enter...")
+    elif cmd == '4':
+        return False
+    return True
 
 if __name__ == "__main__":
-    while True:
-        record_sale()
-        if input("\nΝέα καταχώρηση; (y/n): ").lower() != 'y':
-            break
+    while main_menu():
+        pass
+    clear_screen()
+    print("Το πρόγραμμα τερματίστηκε. Καλή ξεκούραση!")
