@@ -5,6 +5,8 @@ from datetime import datetime
 # --- CONFIGURATION ---
 VAT_RATE = 0.24
 SAVE_DIR = "/Users/nikolask/Documents/Deal_Emporio/ΠΩΛΗΣΕΙΣ"
+
+# FIX: Absolute path logic for categories.txt
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CAT_FILE = os.path.join(SCRIPT_DIR, "categories.txt")
 
@@ -14,7 +16,7 @@ if not os.path.exists(SAVE_DIR):
 
 def load_categories():
     """Loads categories from a text file. Creates default if missing."""
-    default_cats = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκι", "Πουλόβερ", "Γιλέκο"]
+    default_cats = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκκι", "Πουλόβερ", "Γιλέκο"]
     if not os.path.exists(CAT_FILE):
         with open(CAT_FILE, "w", encoding="utf-8") as f:
             for cat in default_cats:
@@ -22,7 +24,6 @@ def load_categories():
         return default_cats
     
     with open(CAT_FILE, "r", encoding="utf-8") as f:
-        # Read lines, strip whitespace, and ignore empty lines
         return [line.strip() for line in f if line.strip()]
 
 def clear_screen():
@@ -40,6 +41,34 @@ def get_choice(options, prompt):
             print(f"Επιλέξτε από 1 έως {len(options)}.")
         except ValueError:
             print("Λάθος είσοδος.")
+
+def update_and_save(df_sales, full_path):
+    """Clean data, calculate rounded VAT, and save with summary lines."""
+    summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+    df_sales = df_sales[~df_sales['Time'].isin(summary_markers)].copy()
+    
+    # Calculate VAT rounded to 2 decimal places
+    # Formula: Price - (Price / 1.24)
+    df_sales['VAT_Calculated'] = df_sales.apply(
+        lambda x: round(x['Price'] - (x['Price'] / (1 + VAT_RATE)), 2) 
+        if (x['Payment'] == "Card" or x['α/β'] == "α") else 0.0, axis=1
+    )
+    
+    total_gross = round(df_sales['Price'].sum(), 2)
+    total_vat = round(df_sales['VAT_Calculated'].sum(), 2)
+    card_sum = round(df_sales[df_sales['Payment'] == 'Card']['Price'].sum(), 2)
+    cash_sum = round(df_sales[df_sales['Payment'] == 'Cash']['Price'].sum(), 2)
+
+    summary_rows = [
+        {"Time": "---SUMMARY---", "Category": "", "Payment": "", "α/β": "", "Price": None},
+        {"Time": "TOTAL CARD", "Category": "", "Payment": "", "α/β": "", "Price": card_sum},
+        {"Time": "TOTAL CASH", "Category": "", "Payment": "", "α/β": "", "Price": cash_sum},
+        {"Time": "GROSS TOTAL", "Category": "", "Payment": "", "α/β": "", "Price": total_gross},
+        {"Time": "VAT TO PAY (24%)", "Category": "", "Payment": "", "α/β": "", "Price": total_vat}
+    ]
+    df_summary = pd.DataFrame(summary_rows)
+    df_to_save = pd.concat([df_sales, df_summary], ignore_index=True)
+    df_to_save.to_csv(full_path, index=False)
 
 def view_daily_report(full_path):
     if not os.path.exists(full_path):
@@ -68,37 +97,10 @@ def view_daily_report(full_path):
         print("Δεν βρέθηκαν πωλήσεις.")
     print("-" * 65)
 
-def update_and_save(df_sales, full_path):
-    summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
-    df_sales = df_sales[~df_sales['Time'].isin(summary_markers)].copy()
-    
-    df_sales['VAT_Calculated'] = df_sales.apply(
-        lambda x: x['Price'] - (x['Price'] / (1 + VAT_RATE)) 
-        if (x['Payment'] == "Card" or x['α/β'] == "α") else 0, axis=1
-    )
-    
-    total_gross = df_sales['Price'].sum()
-    total_vat = df_sales['VAT_Calculated'].sum()
-    card_sum = df_sales[df_sales['Payment'] == 'Card']['Price'].sum()
-    cash_sum = df_sales[df_sales['Payment'] == 'Cash']['Price'].sum()
-
-    summary_rows = [
-        {"Time": "---SUMMARY---", "Category": "", "Payment": "", "α/β": "", "Price": None},
-        {"Time": "TOTAL CARD", "Category": "", "Payment": "", "α/β": "", "Price": card_sum},
-        {"Time": "TOTAL CASH", "Category": "", "Payment": "", "α/β": "", "Price": cash_sum},
-        {"Time": "GROSS TOTAL", "Category": "", "Payment": "", "α/β": "", "Price": total_gross},
-        {"Time": "VAT TO PAY (24%)", "Category": "", "Payment": "", "α/β": "", "Price": total_vat}
-    ]
-    df_summary = pd.DataFrame(summary_rows)
-    df_to_save = pd.concat([df_sales, df_summary], ignore_index=True)
-    df_to_save.to_csv(full_path, index=False)
-
 def main_menu():
     now = datetime.now()
     date_str = now.strftime("%y%m%d")
     full_path = os.path.join(SAVE_DIR, f"{date_str}_sales.csv")
-    
-    # Reload categories every time the menu opens so changes are instant
     categories = load_categories()
     
     clear_screen()
