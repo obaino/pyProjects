@@ -20,6 +20,21 @@ def load_categories():
     with open(CAT_FILE, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
 
+def get_last_sale_info(full_path):
+    """Retrieves the last actual sale row from the CSV, ignoring summaries."""
+    if not os.path.exists(full_path):
+        return "Καμία εγγραφή ακόμα."
+    try:
+        df = pd.read_csv(full_path)
+        summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
+        df_sales = df[~df['Time'].isin(summary_markers)]
+        if not df_sales.empty:
+            last = df_sales.iloc[-1]
+            return f"{last['Time']} | {last['Category']} | {last['Payment']} | {last['Price']:.2f}€"
+        return "Καμία εγγραφή ακόμα."
+    except:
+        return "Σφάλμα ανάγνωσης."
+
 def clear_screen():
     os.system('clear')
 
@@ -45,7 +60,6 @@ def update_and_save(df_sales, full_path):
     summary_markers = ["---SUMMARY---", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT TO PAY (24%)"]
     df_sales = df_sales[~df_sales['Time'].isin(summary_markers)].copy()
     
-    # Calculate VAT per row: Price - (Price / 1.24)
     df_sales['VAT_Calculated'] = df_sales.apply(
         lambda x: round(x['Price'] - (x['Price'] / (1 + VAT_RATE)), 2) 
         if (x['Payment'] == "Card" or x['α/β'] == "α") else 0.0, axis=1
@@ -76,7 +90,6 @@ def view_daily_report(full_path):
     df_sales = df[~df['Time'].isin(summary_markers)].copy()
     df_sales['Price'] = pd.to_numeric(df_sales['Price'], errors='coerce')
 
-    # Recalculate VAT for the view
     df_sales['VAT_Calculated'] = df_sales.apply(
         lambda x: x['Price'] - (x['Price'] / (1 + VAT_RATE)) 
         if (x['Payment'] == "Card" or x['α/β'] == "α") else 0.0, axis=1
@@ -88,7 +101,6 @@ def view_daily_report(full_path):
     
     if not df_sales.empty:
         print(df_sales[['Time', 'Category', 'Payment', 'α/β', 'Price']].to_string(index=False))
-        
         card_total = df_sales[df_sales['Payment'] == 'Card']['Price'].sum()
         cash_total = df_sales[df_sales['Payment'] == 'Cash']['Price'].sum()
         vat_total = df_sales['VAT_Calculated'].sum()
@@ -110,11 +122,16 @@ def main_menu():
     full_path = os.path.join(SAVE_DIR, f"{date_str}_sales.csv")
     categories = load_categories()
     
+    # Get last sale for the summary box
+    last_sale_str = get_last_sale_info(full_path)
+    
     clear_screen()
-    print("="*35)
+    print("="*45)
     print(f"   DEAL EMPORIO - POS SYSTEM")
     print(f"   Ημερομηνία: {now.strftime('%d/%m/%Y')}")
-    print("="*35)
+    print("="*45)
+    print(f" ΤΕΛΕΥΤΑΙΑ ΕΓΓΡΑΦΗ: {last_sale_str}")
+    print("="*45)
     print("[1] Νέα Πώληση")
     print("[2] Προβολή Σημερινών Πωλήσεων")
     print("[3] Διαγραφή τελευταίας σειράς")
