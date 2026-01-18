@@ -3,20 +3,23 @@ import os
 from datetime import datetime
 
 # --- CONFIGURATION ---
+# The specific directory for your CSV sales files
 SAVE_DIR = "/Users/nikolask/Documents/Deal_Emporio/ΠΩΛΗΣΕΙΣ"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# The directory where your script and categories.txt are located
+SCRIPT_DIR = "/Users/nikolask/Myfiles/gitPython/pyProjects/deal"
 CAT_FILE = os.path.join(SCRIPT_DIR, "categories.txt")
 
-# ANSI Color codes
-BRIGHT_GREEN = '\033[92m'
-DARK_GREEN = '\033[32m'
-RED = '\033[91m'
-RESET = '\033[0m'
+# ANSI Color codes for Terminal
+BRIGHT_GREEN = '\033[92m'  # Individual items in a group
+DARK_GREEN = '\033[32m'    # Transaction totals
+RED = '\033[91m'           # Refunds
+RESET = '\033[0m'          # Back to standard text
 
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
 def load_categories():
+    """Loads product categories from a text file or creates defaults."""
     default_cats = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκι", "Πουλόβερ", "Γιλέκο"]
     if not os.path.exists(CAT_FILE):
         with open(CAT_FILE, "w", encoding="utf-8") as f:
@@ -26,10 +29,12 @@ def load_categories():
         return [line.strip() for line in f if line.strip()]
 
 def get_current_path():
+    """Generates the filename based on the current date."""
     date_str = datetime.now().strftime("%y%m%d")
     return os.path.join(SAVE_DIR, f"{date_str}_sales.csv")
 
 def get_last_sale_info(full_path):
+    """Retrieves the last sale for the top menu display."""
     if not os.path.exists(full_path):
         return "No sales yet today."
     try:
@@ -40,9 +45,11 @@ def get_last_sale_info(full_path):
         if not df_sales.empty:
             last = df_sales.iloc[-1]
             time_val = str(last['Time'])
+            
             if "TOTAL-" in time_val:
                 display_time = time_val.replace('TOTAL-', '')
                 return f"{display_time} | TOTAL | {last['Payment']} | {last.get('Price', 0.0):.2f}€"
+            
             return f"{last['Time']} | {last['Category']} | {last['Payment']} | {last.get('Price', 0.0):.2f}€"
         return "No sales yet today."
     except Exception:
@@ -70,6 +77,7 @@ def get_choice(options, prompt, allow_back=True):
             print("Λάθος είσοδος.")
 
 def update_and_save(df_sales, full_path):
+    """Calculates daily summaries and updates the CSV."""
     df_cleaned = df_sales[~df_sales['Time'].str.contains("SUMMARY|TOTAL CARD|TOTAL CASH|GROSS TOTAL", na=False)].copy()
     math_only = df_cleaned[~df_cleaned['Time'].str.contains("TOTAL-", na=False)].copy()
     math_only.loc[:, 'Price'] = pd.to_numeric(math_only['Price'], errors='coerce')
@@ -175,15 +183,11 @@ def main_menu():
             except ValueError:
                 print(">> Σφάλμα (πληκτρολογήστε μόνο αριθμό)."); input("Enter..."); continue
             
-            # --- IMPROVED VALIDATION FOR Y/N ---
             while True:
                 cont = input(f"\nΠροσθήκη άλλου είδους; [y/n]: ").lower().strip()
-                if cont in ['y', 'n']:
-                    break
-                print("Παρακαλώ επιλέξτε 'y' για ναι ή 'n' για όχι.")
-            
-            if cont == 'n':
-                break
+                if cont in ['y', 'n']: break
+                print("Παρακαλώ επιλέξτε 'y' ή 'n'.")
+            if cont == 'n': break
         
         if not basket: return True
         payment = get_choice(["Card", "Cash"], f"Πληρωμή: {running_total:.2f}€")
