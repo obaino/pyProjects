@@ -3,22 +3,20 @@ import os
 from datetime import datetime
 
 # --- CONFIGURATION ---
-# Path for M1 MacBook Air - Adjusted to your local folder
 SAVE_DIR = "/Users/nikolask/Documents/Deal_Emporio/ΠΩΛΗΣΕΙΣ"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CAT_FILE = os.path.join(SCRIPT_DIR, "categories.txt")
 
-# ANSI Color codes for Terminal
-BRIGHT_GREEN = '\033[92m'  # Individual items in a group
-DARK_GREEN = '\033[32m'    # Transaction totals
-RED = '\033[91m'           # Refunds
-RESET = '\033[0m'          # Back to standard text
+# ANSI Color codes
+BRIGHT_GREEN = '\033[92m'
+DARK_GREEN = '\033[32m'
+RED = '\033[91m'
+RESET = '\033[0m'
 
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
 def load_categories():
-    """Loads product categories from a text file or creates defaults."""
     default_cats = ["Κοστούμι", "Πουκάμισο", "Παντελόνι", "Σακκάκι", "Πουλόβερ", "Γιλέκο"]
     if not os.path.exists(CAT_FILE):
         with open(CAT_FILE, "w", encoding="utf-8") as f:
@@ -28,29 +26,23 @@ def load_categories():
         return [line.strip() for line in f if line.strip()]
 
 def get_current_path():
-    """Generates the filename based on the current date."""
     date_str = datetime.now().strftime("%y%m%d")
     return os.path.join(SAVE_DIR, f"{date_str}_sales.csv")
 
 def get_last_sale_info(full_path):
-    """Retrieves the last sale for the top menu display."""
     if not os.path.exists(full_path):
         return "No sales yet today."
     try:
         df = pd.read_csv(full_path)
-        # Exclude summary calculation rows from the 'last sale' check
         invalid_keywords = ["SUMMARY", "TOTAL CARD", "TOTAL CASH", "GROSS TOTAL", "VAT"]
         df_sales = df[~df['Time'].str.contains('|'.join(invalid_keywords), case=False, na=False)]
         
         if not df_sales.empty:
             last = df_sales.iloc[-1]
             time_val = str(last['Time'])
-            
-            # If the last record is a transaction total, simplify the text for the header
             if "TOTAL-" in time_val:
                 display_time = time_val.replace('TOTAL-', '')
                 return f"{display_time} | TOTAL | {last['Payment']} | {last.get('Price', 0.0):.2f}€"
-            
             return f"{last['Time']} | {last['Category']} | {last['Payment']} | {last.get('Price', 0.0):.2f}€"
         return "No sales yet today."
     except Exception:
@@ -60,7 +52,6 @@ def clear_screen():
     os.system('clear')
 
 def get_choice(options, prompt, allow_back=True):
-    """Generic menu selector."""
     print(f"\n{prompt}:")
     if allow_back:
         print("[0] ΑΚΥΡΩΣΗ / ΠΙΣΩ")
@@ -79,7 +70,6 @@ def get_choice(options, prompt, allow_back=True):
             print("Λάθος είσοδος.")
 
 def update_and_save(df_sales, full_path):
-    """Calculates daily summaries and updates the CSV."""
     df_cleaned = df_sales[~df_sales['Time'].str.contains("SUMMARY|TOTAL CARD|TOTAL CASH|GROSS TOTAL", na=False)].copy()
     math_only = df_cleaned[~df_cleaned['Time'].str.contains("TOTAL-", na=False)].copy()
     math_only.loc[:, 'Price'] = pd.to_numeric(math_only['Price'], errors='coerce')
@@ -98,7 +88,6 @@ def update_and_save(df_sales, full_path):
     df_final.to_csv(full_path, index=False)
 
 def view_daily_report(full_path):
-    """Displays the sales list with color-coded groups and refunds."""
     if not os.path.exists(full_path):
         print("\n>> Δεν υπάρχουν πωλήσεις.")
         return
@@ -119,25 +108,20 @@ def view_daily_report(full_path):
             price_val = f"{float(row['Price']):.2f}€" if pd.notnull(row['Price']) else ""
             cat_text = str(row['Category'])
             
-            # 1. Refund logic (Red)
             if "REFUND" in cat_text:
                 line = f"{time_val:<12} {cat_text:<25} {str(row['Payment']):<10} {price_val:<10}"
                 print(f"{RED}{line}{RESET}")
-            # 2. Transaction Total logic (Dark Green)
             elif 'TOTAL-' in time_val:
                 display_time = time_val.replace('TOTAL-', '')
                 line = f"{display_time:<12} {cat_text:<25} {str(row['Payment']):<10} {price_val:<10}"
                 print(f"{DARK_GREEN}{line}{RESET}")
-            # 3. Multi-item group logic (Bright Green)
             elif any(r['Time'] == f"TOTAL-{time_val}" for r in rows):
                 line = f"{time_val:<12} {cat_text:<25} {str(row['Payment']):<10} {price_val:<10}"
                 print(f"{BRIGHT_GREEN}{line}{RESET}")
-            # 4. Standard single item (Default)
             else:
                 line = f"{time_val:<12} {cat_text:<25} {str(row['Payment']):<10} {price_val:<10}"
                 print(line)
 
-        # Totals Section
         math_only = df_display[~df_display['Time'].str.contains("TOTAL-", na=False)].copy()
         math_only.loc[:, 'Price'] = pd.to_numeric(math_only['Price'], errors='coerce')
         card_total = math_only[math_only['Payment'] == 'Card']['Price'].sum()
@@ -190,8 +174,16 @@ def main_menu():
                 running_total += price
             except ValueError:
                 print(">> Σφάλμα (πληκτρολογήστε μόνο αριθμό)."); input("Enter..."); continue
-            cont = input(f"\nΠροσθήκη άλλου είδους; [y/n]: ").lower()
-            if cont != 'y': break
+            
+            # --- IMPROVED VALIDATION FOR Y/N ---
+            while True:
+                cont = input(f"\nΠροσθήκη άλλου είδους; [y/n]: ").lower().strip()
+                if cont in ['y', 'n']:
+                    break
+                print("Παρακαλώ επιλέξτε 'y' για ναι ή 'n' για όχι.")
+            
+            if cont == 'n':
+                break
         
         if not basket: return True
         payment = get_choice(["Card", "Cash"], f"Πληρωμή: {running_total:.2f}€")
@@ -202,7 +194,6 @@ def main_menu():
         if len(basket) > 1:
             new_entries.append({"Time": f"TOTAL-{timestamp}", "Category": ">>> TOTAL", "Payment": payment, "Price": running_total})
         
-        # Fresh path check for midnight rollover
         save_path = get_current_path()
         df_new = pd.DataFrame(new_entries)
         if os.path.exists(save_path):
