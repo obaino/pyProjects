@@ -85,7 +85,9 @@ def update_and_save(df_sales, full_path):
         {"Time": "GROSS TOTAL", "Category": "", "Payment": "", "Price": total_gross}
     ]
     df_final = pd.concat([df_cleaned, pd.DataFrame(summary_rows)], ignore_index=True)
-    df_final.to_csv(full_path, index=False)
+    
+    # The 'utf-8-sig' encoding ensures Greek characters appear correctly in Excel
+    df_final.to_csv(full_path, index=False, encoding='utf-8-sig')
 
 def view_daily_report(full_path):
     if not os.path.exists(full_path):
