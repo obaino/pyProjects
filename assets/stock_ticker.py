@@ -19,7 +19,7 @@ SYMBOLS = {
     "EURUSD=X": "EUR/USD ",  # Euro vs USD (live 24/5)
     }
 
-REFRESH_SECONDS = 300  # Every 5 min
+REFRESH_SECONDS = 180  # Every 3 min
 
 def fetch_prices():
     data = []
@@ -42,7 +42,7 @@ def fetch_prices():
 class TickerWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="ETFs + EUR/USD")
-        self.set_default_size(280, -1)
+        self.set_default_size(260, -1)
         self.set_keep_above(True)
         self.set_decorated(True)
         self.set_resizable(True)
