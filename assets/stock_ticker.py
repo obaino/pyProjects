@@ -11,12 +11,13 @@ import yfinance as yf
 from datetime import datetime
 
 SYMBOLS = {
+    "BELA.AT":  "Jumbo   ",  # Jumbo
     "VWCE.DE":  "VWCE    ",  # Vanguard FTSE All-World
     "VWRA.L":   "VWRA    ",  # Vanguard FTSE All-World  
     "VAGF.DE":  "VAGF    ",  # Global Aggregate Bond
     "GC=F":     "Gold    ",  # Gold Futures
     "EURUSD=X": "EUR/USD ",  # Euro vs USD (live 24/5)
-}
+    }
 
 REFRESH_SECONDS = 300  # Every 5 min
 
@@ -40,8 +41,8 @@ def fetch_prices():
 
 class TickerWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Portfolio + EUR/USD")
-        self.set_default_size(440, -1)
+        super().__init__(title="ETFs + EUR/USD")
+        self.set_default_size(280, -1)
         self.set_keep_above(True)
         self.set_decorated(True)
         self.set_resizable(True)
@@ -75,7 +76,7 @@ class TickerWindow(Gtk.Window):
         for child in self.box.get_children():
             self.box.remove(child)
 
-        header = Gtk.Label(label="📈 Portfolio + EUR/USD")
+        header = Gtk.Label(label="📈 ETFs + EUR/USD")
         header.get_style_context().add_class("header")
         header.set_xalign(0)
         self.box.pack_start(header, False, False, 0)
