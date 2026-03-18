@@ -16,6 +16,7 @@ SYMBOLS = {
     "VWRA.L":   "VWRA    ",  # Vanguard FTSE All-World  
     "VAGF.DE":  "VAGF    ",  # Global Aggregate Bond
     "GC=F":     "Gold    ",  # Gold Futures
+    "BZ=F":     "Brent   ",  # Brent Crude Futures
     "EURUSD=X": "EUR/USD ",  # Euro vs USD (live 24/5)
     }
 
