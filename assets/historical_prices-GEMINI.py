@@ -55,8 +55,6 @@ def get_hist_price(ticker, date_str):
     """Fetches the nearest available market closing price on or before the date"""
     data = yf.download(ticker, end=date_str, progress=False)
     if not data.empty:
-        # Using .squeeze() strips away any single-element dimensions 
-        # to guarantee we extract a pure scalar number safely.
         last_close = data['Close'].iloc[-1]
         if hasattr(last_close, 'squeeze'):
             last_close = last_close.squeeze()
@@ -103,10 +101,8 @@ for event in all_events:
         
         # Route specific deposits to USD track via the live conversion rate
         if date_str in ["2024-08-11", "2024-08-16", "2025-02-14", "2026-06-03"]:
-            # These cash segments are converted to USD to fund LSE (VWRA) allocations
             running_usd_cash += amount / fx_usd_eur
         else:
-            # Standard structural deposits that remain directly in EUR cash
             running_eur_cash += amount
         
     elif event["type"] == "trade":
