@@ -52,14 +52,35 @@ trades = [
 tickers = {'VAGF': 'VAGF.DE', 'VWCE': 'VWCE.DE', 'VWRA': 'VWRA.L'}
 
 def get_hist_price(ticker, date_str):
-    """Fetches the nearest available market closing price on or before the date"""
+    """Fetches the nearest available market closing price on or before the date.
+    Falls back gracefully to wider intervals if weekends/holidays return empty data.
+    """
+    # 1. Try the standard download up to the target date
     data = yf.download(ticker, end=date_str, progress=False)
+    
+    # 2. If it's empty (e.g., weekend/holiday API anomalies), expand search window backward
+    if data.empty:
+        # Fetch a 7-day historical window surrounding the date to catch the closest market close
+        start_dt = pd.to_datetime(date_str) - pd.Timedelta(days=7)
+        data = yf.download(ticker, start=start_dt.strftime('%Y-%m-%d'), end=date_str, progress=False)
+        
     if not data.empty:
         last_close = data['Close'].iloc[-1]
         if hasattr(last_close, 'squeeze'):
             last_close = last_close.squeeze()
         return float(last_close)
+        
     return 0.0
+
+# def get_hist_price(ticker, date_str):
+#     """Fetches the nearest available market closing price on or before the date"""
+#     data = yf.download(ticker, end=date_str, progress=False)
+#     if not data.empty:
+#         last_close = data['Close'].iloc[-1]
+#         if hasattr(last_close, 'squeeze'):
+#             last_close = last_close.squeeze()
+#         return float(last_close)
+#     return 0.0
 
 print(f"{'Date':<12} | {'Cash Input':<12} | {'Exact Pre-Deposit Portfolio Value (EUR)':<40}")
 print("-" * 75)
