@@ -21,7 +21,7 @@ cash_flows = [
     {"date": "2026-05-20", "amount_eur": 5000.00},
     {"date": "2026-05-22", "amount_eur": 5000.00},
     {"date": "2026-06-02", "amount_eur": 5000.00},
-    {"date": "2026-06-03", "amount_eur": 40489.56}  # Today's deposit
+    {"date": "2026-06-03", "amount_eur": 41746.67}    # Today's deposit
 ]
 
 # 2. Your complete trading ledger (from Trades tab + today's trade)
@@ -45,7 +45,7 @@ trades = [
     {"date": "2026-05-25", "etf": "VWCE", "shares": 22, "cash_impact_usd": 0, "cash_impact_eur": -3579.76},
     {"date": "2026-06-02", "etf": "VAGF", "shares": 150, "cash_impact_usd": 0, "cash_impact_eur": -3565.93},
     {"date": "2026-06-02", "etf": "VWCE", "shares": 9, "cash_impact_usd": 0, "cash_impact_eur": -1477.33},
-    {"date": "2026-06-03", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8566.60, "cash_impact_eur": 0} # Today's purchase
+    {"date": "2026-06-03", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8566.96, "cash_impact_eur": 0} # Today's purchase
 ]
 
 # Tickers map
