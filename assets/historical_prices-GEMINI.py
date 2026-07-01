@@ -21,7 +21,8 @@ cash_flows = [
     {"date": "2026-05-20", "amount_eur": 5000.00},
     {"date": "2026-05-22", "amount_eur": 5000.00},
     {"date": "2026-06-02", "amount_eur": 5000.00},
-    {"date": "2026-06-03", "amount_eur": 41746.67}    # Today's deposit
+    {"date": "2026-06-03", "amount_eur": 41746.67},
+    {"date": "2026-07-01", "amount_eur": 5000.00} # today's deposit
 ]
 
 # 2. Your complete trading ledger (from Trades tab + today's trade)
