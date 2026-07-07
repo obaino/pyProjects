@@ -49,7 +49,8 @@ trades = [
     {"date": "2026-06-02", "etf": "VWCE", "shares": 9, "cash_impact_usd": 0, "cash_impact_eur": -1477.33},
     {"date": "2026-06-03", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8566.96, "cash_impact_eur": 0},
     {"date": "2026-06-05", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8500.33, "cash_impact_eur": 0},
-    {"date": "2026-07-06", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8539.04, "cash_impact_eur": 0} # Today's purchase
+    {"date": "2026-07-06", "etf": "VWRA", "shares": 45, "cash_impact_usd": -8539.04, "cash_impact_eur": 0},
+    {"date": "2026-07-07", "etf": "VWCE", "shares": 9, "cash_impact_usd": 0, "cash_impact_eur": 1486.33534} # Today's purchase
 ]
 
 # Tickers map
