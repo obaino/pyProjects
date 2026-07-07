@@ -136,3 +136,25 @@ for event in all_events:
         shares_owned[t_data['etf']] += t_data['shares']
         running_eur_cash += t_data['cash_impact_eur']
         running_usd_cash += t_data['cash_impact_usd']
+
+# ===========================================================================
+# EXTRA LIVE MONITORING BLOCK (JULY 2026)
+# ===========================================================================
+print("\n" + "="*75)
+print(" LIVE PORTFOLIO STATUS (AFTER TODAY'S TRADES) ")
+print("="*75)
+
+# Fetch latest available prices for today
+today_str = datetime.now().strftime('%Y-%m-%d')
+v_vagf = shares_owned['VAGF'] * get_hist_price(tickers['VAGF'], today_str)
+v_vwce = shares_owned['VWCE'] * get_hist_price(tickers['VWCE'], today_str)
+fx_rate = get_hist_price('USDEUR=X', today_str)
+v_vwra_eur = (shares_owned['VWRA'] * get_hist_price(tickers['VWRA'], today_str)) * fx_rate
+
+total_assets = v_vagf + v_vwce + v_vwra_eur
+total_cash = running_eur_cash + (running_usd_cash * fx_rate)
+
+print(f"Shares Owned   : VAGF: {shares_owned['VAGF']:.2f} | VWCE: {shares_owned['VWCE']:.2f} | VWRA: {shares_owned['VWRA']:.2f}")
+print(f"Remaining Cash : EUR: €{running_eur_cash:,.2f} | USD: ${running_usd_cash:,.2f}")
+print(f"Total Portfolio Value: €{total_assets + total_cash:,.2f}")
+print("="*75)
