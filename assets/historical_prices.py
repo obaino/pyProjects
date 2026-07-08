@@ -65,7 +65,6 @@ for event in all_events:
         
         total_value_eur = v_vagf + v_vwce + v_vwra_eur + running_eur_cash + (running_usd_cash * fx_usd_eur)
         
-        # Access dictionary values using CSV header keys
         print(f"{date_str:<12} | €{event['data']['amount_eur']:<10,.2f} | €{total_value_eur:<38,.2f}")
         
         amount = event['data']['amount_eur']
@@ -79,3 +78,24 @@ for event in all_events:
         shares_owned[t_data['etf']] += t_data['shares']
         running_eur_cash += t_data['cash_impact_eur']
         running_usd_cash += t_data['cash_impact_usd']
+
+# ---------------------------------------------------------------------------
+# LIVE PORTFOLIO STATUS (AFTER TODAY'S TRADES)
+# ---------------------------------------------------------------------------
+print("\n" + "="*75)
+print(" LIVE PORTFOLIO STATUS (CURRENT AS OF RUNTIME) ")
+print("="*75)
+
+today_str = datetime.now().strftime('%Y-%m-%d')
+v_vagf_live = shares_owned['VAGF'] * get_hist_price(tickers['VAGF'], today_str)
+v_vwce_live = shares_owned['VWCE'] * get_hist_price(tickers['VWCE'], today_str)
+fx_rate_live = get_hist_price('USDEUR=X', today_str)
+v_vwra_eur_live = (shares_owned['VWRA'] * get_hist_price(tickers['VWRA'], today_str)) * fx_rate_live
+
+total_assets_live = v_vagf_live + v_vwce_live + v_vwra_eur_live
+total_cash_live = running_eur_cash + (running_usd_cash * fx_rate_live)
+
+print(f"Shares Owned   : VAGF: {shares_owned['VAGF']:.4f} | VWCE: {shares_owned['VWCE']:.2f} | VWRA: {shares_owned['VWRA']:.2f}")
+print(f"Remaining Cash : EUR: €{running_eur_cash:,.2f} | USD: ${running_usd_cash:,.2f}")
+print(f"Total Value    : €{total_assets_live + total_cash_live:,.2f} (Assets: €{total_assets_live:,.2f} + Unspent Cash: €{total_cash_live:,.2f})")
+print("="*75)
