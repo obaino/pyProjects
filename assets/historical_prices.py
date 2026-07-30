@@ -68,7 +68,7 @@ for event in all_events:
         print(f"{date_str:<12} | €{event['data']['amount_eur']:<10,.2f} | €{total_value_eur:<38,.2f}")
         
         amount = event['data']['amount_eur']
-        if date_str in ["2024-08-11", "2024-08-16", "2025-02-14", "2026-06-03"]:
+        if date_str in ["2024-08-11", "2024-08-16", "2025-02-14", "2026-06-03", "2026-07-02"]:
             running_usd_cash += amount / fx_usd_eur
         else:
             running_eur_cash += amount
