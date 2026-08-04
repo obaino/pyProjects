@@ -2,60 +2,65 @@ import pandas as pd
 import yfinance as yf
 
 # ==============================================================================
-# 1. DATA LOADING & ROBUST COLUMN DETECTOR
+# 1. DATA LOADING & PREPARATION
 # ==============================================================================
 df_cash = pd.read_csv("cash_flows.csv", encoding="utf-8-sig")
 df_trades = pd.read_csv("trades.csv", encoding="utf-8-sig")
 
-# Strip whitespace and convert column headers to lowercase
+# Normalize column headers
 df_cash.columns = df_cash.columns.str.strip().str.lower()
 df_trades.columns = df_trades.columns.str.strip().str.lower()
 
-
-# Dynamic column detection function
-def get_col_name(df, possible_names):
-    for name in possible_names:
-        for col in df.columns:
-            if name in col:
-                return col
-    return None
-
-
-# Map trade column names automatically
-col_date = get_col_name(df_trades, ["date"])
-col_ticker = get_col_name(df_trades, ["ticker", "etf", "symbol"])
-col_shares = get_col_name(df_trades, ["shares", "qty", "quantity"])
-col_cost = get_col_name(
-    df_trades, ["cost_eur", "cost", "total_eur", "total eur", "total"]
-)
-
+# Map potential column name variations automatically
 df_trades = df_trades.rename(
     columns={
-        col_date: "date",
-        col_ticker: "etf",
-        col_shares: "shares",
-        col_cost: "cost_eur",
+        "ticker": "etf",
+        "symbol": "etf",
+        "qty": "shares",
+        "quantity": "shares",
+        "cost": "cost_eur",
+        "total_eur": "cost_eur",
+        "total eur": "cost_eur",
     }
 )
 
-# Parse dates
 df_cash["date"] = pd.to_datetime(df_cash["date"])
 df_trades["date"] = pd.to_datetime(df_trades["date"], format="mixed")
 
-# Ensure numeric types
 df_cash["amount_eur"] = pd.to_numeric(df_cash["amount_eur"], errors="coerce")
 df_trades["shares"] = pd.to_numeric(df_trades["shares"], errors="coerce")
 df_trades["cost_eur"] = pd.to_numeric(df_trades["cost_eur"], errors="coerce")
 
-# Map tickers to yfinance symbols
 TICKER_MAP = {"VWRA": "VWRA.L", "VWCE": "VWCE.DE", "VAGF": "VAGF.DE"}
+
+# Cache FX rates to avoid repeated API network calls
+fx_cache = {}
+
+
+def get_usd_eur_rate(eval_date):
+    """Fetches the historical USD to EUR conversion rate on or just before eval_date."""
+    date_str = eval_date.strftime("%Y-%m-%d")
+    if date_str in fx_cache:
+        return fx_cache[date_str]
+
+    fx = yf.Ticker("EURUSD=X").history(
+        start=eval_date - pd.Timedelta(days=5),
+        end=eval_date + pd.Timedelta(days=1),
+    )
+    if not fx.empty:
+        rate = 1.0 / fx["Close"].iloc[-1]
+    else:
+        rate = 0.92
+
+    fx_cache[date_str] = rate
+    return rate
 
 
 # ==============================================================================
 # 2. DYNAMIC PORTFOLIO EVALUATION FUNCTION
 # ==============================================================================
 def get_portfolio_value_on_date(eval_date, df_cash_until, df_trades_until):
-    """Calculates total portfolio value (Holdings Value + Unspent Cash) on eval_date."""
+    """Calculates total portfolio market value (ETF holdings + Unspent Cash) in EUR on eval_date."""
     trades_sub = df_trades_until[df_trades_until["date"] <= eval_date]
     cash_sub = df_cash_until[df_cash_until["date"] <= eval_date]
 
@@ -68,7 +73,9 @@ def get_portfolio_value_on_date(eval_date, df_cash_until, df_trades_until):
     spent_eur = trades_sub["cost_eur"].sum()
     unspent_cash = total_deposited - spent_eur
 
+    usd_eur_rate = get_usd_eur_rate(eval_date)
     market_value = 0.0
+
     for etf, shares in holdings.items():
         if shares > 0 and etf in TICKER_MAP:
             yf_symbol = TICKER_MAP[etf]
@@ -79,7 +86,7 @@ def get_portfolio_value_on_date(eval_date, df_cash_until, df_trades_until):
             if not hist.empty:
                 last_price = hist["Close"].iloc[-1]
                 if etf == "VWRA":
-                    last_price *= 0.92  # USD to EUR conversion
+                    last_price *= usd_eur_rate
                 market_value += shares * last_price
 
     return market_value + unspent_cash
@@ -126,7 +133,7 @@ for idx, row in df_cash.iterrows():
 df_twr_output = pd.DataFrame(twr_rows)
 
 # ==============================================================================
-# 4. LIVE PORTFOLIO & CASH VALUATION
+# 4. LIVE PORTFOLIO, CASH VALUATION & LIVE TWR
 # ==============================================================================
 total_deposited = df_cash["amount_eur"].sum()
 total_spent = df_trades["cost_eur"].sum()
@@ -138,6 +145,10 @@ holdings_summary = (
     .reset_index()
 )
 
+# Fetch current live USD to EUR rate dynamically
+fx_live = yf.Ticker("EURUSD=X").fast_info.last_price
+live_usd_eur_rate = 1.0 / fx_live if fx_live else 0.92
+
 live_rows = []
 total_market_value = 0.0
 
@@ -146,13 +157,11 @@ for _, row in holdings_summary.iterrows():
     shares = row["shares"]
     cost = row["cost_eur"]
 
-    # Fetch live price
     yf_symbol = TICKER_MAP.get(etf, etf)
-    ticker_obj = yf.Ticker(yf_symbol)
-    live_price = ticker_obj.fast_info.last_price
+    live_price = yf.Ticker(yf_symbol).fast_info.last_price
 
     if etf == "VWRA":
-        live_price *= 0.92  # USD to EUR estimate
+        live_price *= live_usd_eur_rate
 
     mkt_val = shares * live_price
     total_market_value += mkt_val
@@ -178,6 +187,15 @@ total_pnl_pct = (
     (total_pnl / total_deposited) * 100 if total_deposited > 0 else 0.0
 )
 
+# --- Compute Live TWR since the last deposit ---
+last_post_val = prev_post_val  # Post-Val from the last deposit date
+last_cum_twr = cum_twr        # TWR reached at the last deposit date
+
+sub_period_return_live = (
+    (total_portfolio_value / last_post_val) - 1.0 if last_post_val > 0 else 0.0
+)
+live_twr = ((1.0 + last_cum_twr) * (1.0 + sub_period_return_live)) - 1.0
+
 # ==============================================================================
 # 5. TERMINAL OUTPUTS
 # ==============================================================================
@@ -196,4 +214,5 @@ print(f"Total Invested In ETFs : €{total_market_value:,.2f}")
 print(f"Total Portfolio Value  : €{total_portfolio_value:,.2f}")
 print(f"Total Cash Deposited   : €{total_deposited:,.2f}")
 print(f"Overall Profit/Loss    : €{total_pnl:+,.2f} ({total_pnl_pct:+.2f}%)")
+print(f"Live Portfolio TWR     : {live_twr:+.2%}")
 print("======================================================================")
